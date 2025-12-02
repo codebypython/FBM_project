@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quản lý sân bóng - FBM Sports{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-2">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        Quản lý sân bóng
+                    </h2>
+                    <p class="text-muted mb-0">Quản lý danh sách sân bóng trong hệ thống</p>
+                </div>
+                <div>
+                    <a href="{% url 'fields:field_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Thêm sân mới
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Tìm kiếm</label>
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="Tên sân, vị trí..."
+                                   value="{{ search_query }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Loại sân</label>
+                            <select name="field_type" class="form-select">
+                                <option value="">Tất cả</option>
+                                {% for type in field_types %}
+                                    <option value="{{ type.id }}" {% if field_type_filter == type.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ type.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search me-2"></i>Tìm kiếm
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fields Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul me-2"></i>
+                        Danh sách sân bóng ({{ page_obj.paginator.count }} sân)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Tên sân</th>
+                                        <th>Loại sân</th>
+                                        <th>Vị trí</th>
+                                        <th>Kích thước</th>
+                                        <th>Trạng thái</th>
+                                        <th>Ngày tạo</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for field in page_obj %}
+                                    <tr>
+                                        <td><strong>#{{ field.id }}</strong></td>
+                                        <td>
+                                            <strong>{{ field.name }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ field.field_type.name }}</span>
+                                        </td>
+                                        <td>{{ field.location|truncatewords:5 }}</td>
+                                        <td>{{ field.size }}</td>
+                                        <td>
+                                            {% if field.is_active %}
+                                                <span class="badge bg-success">Hoạt động</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Không hoạt động</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ field.created_at|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'fields:field_detail' field.id %}" 
+                                                   class="btn btn-outline-info"
+                                                   title="Xem chi tiết">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{% url 'fields:field_edit' field.id %}" 
+                                                   class="btn btn-outline-primary"
+                                                   title="Chỉnh sửa">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a href="{% url 'fields:field_delete' field.id %}" 
+                                                   class="btn btn-outline-danger"
+                                                   title="Xóa"
+                                                   onclick="return confirm('Bạn có chắc muốn xóa sân này?')">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="Page navigation" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if field_type_filter %}&field_type={{ field_type_filter }}{% endif %}">
+                                            <i class="bi bi-chevron-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if field_type_filter %}&field_type={{ field_type_filter }}{% endif %}">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if field_type_filter %}&field_type={{ field_type_filter }}{% endif %}">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if field_type_filter %}&field_type={{ field_type_filter }}{% endif %}">
+                                            <i class="bi bi-chevron-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                            <p class="text-muted mt-3">Chưa có sân bóng nào.</p>
+                            <a href="{% url 'fields:field_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>Thêm sân đầu tiên
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-primary">{{ page_obj.paginator.count }}</h4>
+                    <small class="text-muted">Tổng số sân</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-success">{{ field_types.count }}</h4>
+                    <small class="text-muted">Loại sân</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}
+

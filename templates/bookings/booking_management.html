@@ -1,0 +1,508 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quản lý đặt sân - FBM Sports{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">
+                <i class="bi bi-calendar-event me-2"></i>
+                Quản lý đặt sân
+            </h2>
+            <p class="text-muted">Theo dõi và quản lý tất cả đơn đặt sân trong hệ thống</p>
+        </div>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number">{{ stats.total_bookings }}</div>
+                <div class="stats-label">Tổng đặt sân</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card info">
+                <div class="stats-number">{{ stats.today_bookings }}</div>
+                <div class="stats-label">Hôm nay</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card warning">
+                <div class="stats-number">{{ stats.pending_bookings }}</div>
+                <div class="stats-label">Chờ xác nhận</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card success">
+                <div class="stats-number">{{ stats.confirmed_bookings }}</div>
+                <div class="stats-label">Đã xác nhận</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-light border-0">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-primary w-100" onclick="showTodayBookings()">
+                                <i class="bi bi-calendar-day me-2"></i>
+                                Đặt sân hôm nay
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-warning w-100" onclick="showPendingBookings()">
+                                <i class="bi bi-clock me-2"></i>
+                                Chờ xác nhận
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-info w-100" onclick="showInProgressBookings()">
+                                <i class="bi bi-play-circle me-2"></i>
+                                Đang diễn ra
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-success w-100" onclick="exportBookings()">
+                                <i class="bi bi-download me-2"></i>
+                                Xuất báo cáo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Search and Filters -->
+    <div class="search-filters mb-4">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label">Tìm kiếm</label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Khách hàng, sân, SĐT...">
+                </div>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="status" class="form-label">Trạng thái</label>
+                <select class="form-control" id="status" name="status">
+                    <option value="">Tất cả</option>
+                    {% for value, display in booking_statuses %}
+                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                            {{ display }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="date" class="form-label">Ngày</label>
+                <input type="date" class="form-control" id="date" name="date" value="{{ date_filter }}">
+            </div>
+            
+            <div class="col-md-3">
+                <label for="date_range" class="form-label">Khoảng thời gian</label>
+                <select class="form-control" id="date_range" name="date_range">
+                    <option value="">Chọn khoảng thời gian</option>
+                    <option value="today">Hôm nay</option>
+                    <option value="tomorrow">Ngày mai</option>
+                    <option value="this_week">Tuần này</option>
+                    <option value="next_week">Tuần tới</option>
+                    <option value="this_month">Tháng này</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>
+                    Lọc
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Bookings Table -->
+    {% if page_obj %}
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" class="form-check-input" id="selectAll">
+                                </th>
+                                <th>Mã đơn</th>
+                                <th>Sân bóng</th>
+                                <th>Khách hàng</th>
+                                <th>Ngày & Giờ</th>
+                                <th>Trạng thái</th>
+                                <th>Tổng tiền</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for booking in page_obj %}
+                            <tr data-booking-id="{{ booking.id }}">
+                                <td>
+                                    <input type="checkbox" class="form-check-input booking-checkbox" value="{{ booking.id }}">
+                                </td>
+                                <td>
+                                    <span class="fw-bold">#{{ booking.id }}</span>
+                                    <br>
+                                    <small class="text-muted">{{ booking.created_at|date:"d/m H:i" }}</small>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if booking.field.image %}
+                                            <img src="{{ booking.field.image.url }}" alt="{{ booking.field.name }}" 
+                                                 class="rounded me-2" width="40" height="40" style="object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-light rounded me-2 d-flex align-items-center justify-content-center" 
+                                                 style="width: 40px; height: 40px;">
+                                                <i class="bi bi-image text-muted"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-bold">{{ booking.field.name }}</div>
+                                            <small class="text-muted">{{ booking.field.field_type.name }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <div class="fw-bold">{{ booking.customer_name }}</div>
+                                        <small class="text-muted">
+                                            <i class="bi bi-telephone me-1"></i>
+                                            {{ booking.customer_phone }}
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <div class="fw-bold">{{ booking.date|date:"d/m/Y" }}</div>
+                                        <small class="text-muted">{{ booking.time_slot.name }}</small>
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ booking.time_slot.start_time|time:"H:i" }} - {{ booking.time_slot.end_time|time:"H:i" }}
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ booking.status }}">
+                                        {{ booking.get_status_display }}
+                                    </span>
+                                    {% if booking.is_overdue %}
+                                        <br><small class="text-danger">Quá hạn</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-success">{{ booking.total_price|floatformat:0 }} VNĐ</span>
+                                    <br>
+                                    <small class="badge 
+                                        {% if booking.payment_status == 'paid' %}bg-success
+                                        {% elif booking.payment_status == 'pending' %}bg-warning
+                                        {% else %}bg-info{% endif %}">
+                                        {{ booking.get_payment_status_display }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'bookings:booking_detail' booking.id %}" 
+                                           class="btn btn-outline-primary" data-bs-toggle="tooltip" title="Xem chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        
+                                        {% if booking.can_confirm %}
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="confirmBooking({{ booking.id }})"
+                                                    data-bs-toggle="tooltip" title="Xác nhận">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                        {% endif %}
+                                        
+                                        {% if booking.can_confirm_payment %}
+                                            <button type="button" class="btn btn-outline-warning" 
+                                                    onclick="confirmPayment({{ booking.id }})"
+                                                    data-bs-toggle="tooltip" title="Xác nhận thanh toán">
+                                                <i class="bi bi-cash-coin"></i>
+                                            </button>
+                                        {% endif %}
+                                        
+                                        {% if booking.can_start %}
+                                            <button type="button" class="btn btn-outline-info" 
+                                                    onclick="startBooking({{ booking.id }})"
+                                                    data-bs-toggle="tooltip" title="Bắt đầu">
+                                                <i class="bi bi-play"></i>
+                                            </button>
+                                        {% endif %}
+                                        
+                                        {% if booking.status == 'in_progress' %}
+                                            <button type="button" class="btn btn-outline-secondary" 
+                                                    onclick="completeBooking({{ booking.id }})"
+                                                    data-bs-toggle="tooltip" title="Hoàn thành">
+                                                <i class="bi bi-check-circle"></i>
+                                            </button>
+                                        {% endif %}
+                                        
+                                        {% if booking.can_cancel %}
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="cancelBooking({{ booking.id }})"
+                                                    data-bs-toggle="tooltip" title="Hủy đơn">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bulk Actions -->
+        <div class="card mt-3" id="bulkActions" style="display: none;">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span id="selectedCount">0 đơn được chọn</span>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-success" onclick="bulkConfirm()">
+                            <i class="bi bi-check-lg me-1"></i>
+                            Xác nhận
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="bulkCancel()">
+                            <i class="bi bi-x-lg me-1"></i>
+                            Hủy
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="bulkExport()">
+                            <i class="bi bi-download me-1"></i>
+                            Xuất
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <!-- No Results -->
+        <div class="text-center py-5">
+            <i class="bi bi-calendar-x text-muted" style="font-size: 4rem;"></i>
+            <h4 class="mt-3 text-muted">Không có đơn đặt sân nào</h4>
+            <p class="text-muted">
+                {% if search_query or status_filter or date_filter %}
+                    Thử thay đổi bộ lọc để xem kết quả khác
+                {% else %}
+                    Chưa có đơn đặt sân nào trong hệ thống
+                {% endif %}
+            </p>
+            {% if search_query or status_filter or date_filter %}
+                <a href="{% url 'bookings:booking_management' %}" class="btn btn-primary">
+                    <i class="bi bi-arrow-clockwise me-1"></i>
+                    Xem tất cả
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- CSRF Token for AJAX -->
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-submit form on filter change
+    $('#status, #date, #date_range').change(function() {
+        $(this).closest('form').submit();
+    });
+    
+    // Real-time search
+    var searchTimeout;
+    $('#search').on('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            $('#search').closest('form').submit();
+        }, 800);
+    });
+    
+    // Initialize tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip();
+    
+    // Bulk selection
+    $('#selectAll').change(function() {
+        $('.booking-checkbox').prop('checked', this.checked);
+        updateBulkActions();
+    });
+    
+    $('.booking-checkbox').change(function() {
+        updateBulkActions();
+    });
+    
+    // Auto-refresh every 30 seconds
+    setInterval(function() {
+        if ($('.booking-checkbox:checked').length === 0) {
+            location.reload();
+        }
+    }, 30000);
+});
+
+function updateBulkActions() {
+    var checkedCount = $('.booking-checkbox:checked').length;
+    
+    if (checkedCount > 0) {
+        $('#bulkActions').show();
+        $('#selectedCount').text(checkedCount + ' đơn được chọn');
+    } else {
+        $('#bulkActions').hide();
+    }
+}
+
+function showTodayBookings() {
+    var today = new Date().toISOString().split('T')[0];
+    $('#date').val(today);
+    $('#date').closest('form').submit();
+}
+
+function showPendingBookings() {
+    $('#status').val('pending');
+    $('#status').closest('form').submit();
+}
+
+function showInProgressBookings() {
+    $('#status').val('in_progress');
+    $('#status').closest('form').submit();
+}
+
+function exportBookings() {
+    showAlert('info', 'Chức năng xuất báo cáo sẽ được phát triển trong phiên bản tiếp theo.');
+}
+
+function bulkConfirm() {
+    var selectedIds = $('.booking-checkbox:checked').map(function() {
+        return this.value;
+    }).get();
+    
+    if (selectedIds.length === 0) {
+        showAlert('warning', 'Vui lòng chọn ít nhất một đơn đặt sân.');
+        return;
+    }
+    
+    if (!confirm(`Bạn có chắc chắn muốn xác nhận ${selectedIds.length} đơn đặt sân đã chọn?`)) {
+        return;
+    }
+    
+    // In a real implementation, you would send AJAX requests
+    showAlert('info', 'Chức năng xác nhận hàng loạt sẽ được phát triển trong phiên bản tiếp theo.');
+}
+
+function bulkCancel() {
+    var selectedIds = $('.booking-checkbox:checked').map(function() {
+        return this.value;
+    }).get();
+    
+    if (selectedIds.length === 0) {
+        showAlert('warning', 'Vui lòng chọn ít nhất một đơn đặt sân.');
+        return;
+    }
+    
+    var reason = prompt('Nhập lý do hủy hàng loạt:');
+    if (!reason) return;
+    
+    if (!confirm(`Bạn có chắc chắn muốn hủy ${selectedIds.length} đơn đặt sân đã chọn?`)) {
+        return;
+    }
+    
+    // In a real implementation, you would send AJAX requests
+    showAlert('info', 'Chức năng hủy hàng loạt sẽ được phát triển trong phiên bản tiếp theo.');
+}
+
+function bulkExport() {
+    var selectedIds = $('.booking-checkbox:checked').map(function() {
+        return this.value;
+    }).get();
+    
+    if (selectedIds.length === 0) {
+        showAlert('warning', 'Vui lòng chọn ít nhất một đơn đặt sân.');
+        return;
+    }
+    
+    showAlert('info', 'Chức năng xuất hàng loạt sẽ được phát triển trong phiên bản tiếp theo.');
+}
+
+function confirmPayment(bookingId) {
+    if (!confirm('Xác nhận đã nhận thanh toán bằng tiền mặt?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: `/bookings/${bookingId}/confirm-payment/`,
+        type: 'POST',
+        data: {
+            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+        },
+        success: function(response) {
+            if (response.success) {
+                showAlert('success', response.message);
+                // Reload page after 1 second
+                setTimeout(function() {
+                    location.reload();
+                }, 1000);
+            } else {
+                showAlert('danger', response.message);
+            }
+        },
+        error: function(xhr) {
+            showAlert('danger', 'Có lỗi xảy ra. Vui lòng thử lại.');
+        }
+    });
+}
+</script>
+{% endblock %}

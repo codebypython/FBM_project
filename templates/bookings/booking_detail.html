@@ -1,0 +1,393 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chi tiết đặt sân #{{ booking.id }} - FBM Sports{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'bookings:booking_list' %}" class="text-decoration-none">Đơn đặt sân</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Chi tiết #{{ booking.id }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <!-- Booking Information -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Thông tin đặt sân #{{ booking.id }}
+                        </h5>
+                        <div>
+                            <span class="status-badge status-{{ booking.status }}">
+                                {{ booking.get_status_display }}
+                            </span>
+                            <span class="badge ms-2
+                                {% if booking.payment_status == 'paid' %}bg-success
+                                {% elif booking.payment_status == 'pending' %}bg-warning
+                                {% else %}bg-info{% endif %}">
+                                {{ booking.get_payment_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Field Information -->
+                            <h6 class="fw-bold text-primary mb-3">Thông tin sân bóng</h6>
+                            <div class="d-flex mb-3">
+                                {% if booking.field.image %}
+                                    <img src="{{ booking.field.image.url }}" alt="{{ booking.field.name }}" 
+                                         class="rounded me-3" width="80" height="80" style="object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-light rounded me-3 d-flex align-items-center justify-content-center" 
+                                         style="width: 80px; height: 80px;">
+                                        <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="fw-bold mb-1">{{ booking.field.name }}</h6>
+                                    <p class="text-muted mb-1">{{ booking.field.field_type.name }}</p>
+                                    <p class="text-muted mb-0">
+                                        <i class="bi bi-geo-alt me-1"></i>
+                                        {{ booking.field.location }}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <!-- Booking Details -->
+                            <h6 class="fw-bold text-primary mb-3">Chi tiết đặt sân</h6>
+                            <table class="table table-borderless table-sm">
+                                <tr>
+                                    <td class="fw-bold">Ngày:</td>
+                                    <td>{{ booking.date|date:"l, d/m/Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Khung giờ:</td>
+                                    <td>{{ booking.time_slot.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Thời gian:</td>
+                                    <td>{{ booking.time_slot.start_time|time:"H:i" }} - {{ booking.time_slot.end_time|time:"H:i" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Thời lượng:</td>
+                                    <td>{{ booking.time_slot.duration_hours }} giờ</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <!-- Customer Information -->
+                            <h6 class="fw-bold text-primary mb-3">Thông tin khách hàng</h6>
+                            <table class="table table-borderless table-sm">
+                                <tr>
+                                    <td class="fw-bold">Tên khách hàng:</td>
+                                    <td>{{ booking.customer_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Số điện thoại:</td>
+                                    <td>
+                                        <a href="tel:{{ booking.customer_phone }}" class="text-decoration-none">
+                                            {{ booking.customer_phone }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Người đặt:</td>
+                                    <td>{{ booking.user.full_name|default:booking.user.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Email:</td>
+                                    <td>
+                                        <a href="mailto:{{ booking.user.email }}" class="text-decoration-none">
+                                            {{ booking.user.email }}
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            {% if booking.note %}
+                                <h6 class="fw-bold text-primary mb-2">Ghi chú</h6>
+                                <p class="text-muted">{{ booking.note }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Booking History -->
+            {% if history %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Lịch sử thay đổi
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% for item in history %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker">
+                                    <i class="bi bi-{% if item.status == 'pending' %}clock{% elif item.status == 'confirmed' %}check-circle{% elif item.status == 'in_progress' %}play-circle{% elif item.status == 'completed' %}check-circle-fill{% else %}x-circle{% endif %}"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="fw-bold mb-1">{{ item.get_status_display }}</h6>
+                                            {% if item.comment %}
+                                                <p class="text-muted mb-1">{{ item.comment }}</p>
+                                            {% endif %}
+                                            {% if item.changed_by %}
+                                                <small class="text-muted">
+                                                    Bởi: {{ item.changed_by.full_name|default:item.changed_by.username }}
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">{{ item.created_at|date:"d/m/Y H:i" }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Actions and Payment -->
+        <div class="col-lg-4">
+            <!-- Payment Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-credit-card me-2"></i>
+                        Thông tin thanh toán
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td class="fw-bold">Tổng tiền:</td>
+                            <td class="text-end fw-bold text-success">{{ booking.total_price|floatformat:0 }} VNĐ</td>
+                        </tr>
+                        {% if booking.deposit > 0 %}
+                        <tr>
+                            <td>Tiền cọc:</td>
+                            <td class="text-end">{{ booking.deposit|floatformat:0 }} VNĐ</td>
+                        </tr>
+                        <tr>
+                            <td>Còn lại:</td>
+                            <td class="text-end">{{ booking.get_remaining_amount|floatformat:0 }} VNĐ</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td class="fw-bold">Trạng thái:</td>
+                            <td class="text-end">
+                                <span class="badge 
+                                    {% if booking.payment_status == 'paid' %}bg-success
+                                    {% elif booking.payment_status == 'pending' %}bg-warning
+                                    {% else %}bg-info{% endif %}">
+                                    {{ booking.get_payment_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-gear me-2"></i>
+                        Thao tác
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if user.is_manager or user.is_admin %}
+                        <!-- Manager Actions -->
+                        {% if booking.can_confirm %}
+                            <button type="button" class="btn btn-success w-100 mb-2" 
+                                    onclick="confirmBooking({{ booking.id }})">
+                                <i class="bi bi-check-lg me-2"></i>
+                                Xác nhận đặt sân
+                            </button>
+                        {% endif %}
+                        
+                        {% if booking.can_confirm_payment %}
+                            <button type="button" class="btn btn-warning w-100 mb-2" 
+                                    onclick="confirmPayment({{ booking.id }})">
+                                <i class="bi bi-cash-coin me-2"></i>
+                                Xác nhận thanh toán (Tiền mặt)
+                            </button>
+                        {% endif %}
+                        
+                        {% if booking.can_start %}
+                            <button type="button" class="btn btn-info w-100 mb-2" 
+                                    onclick="startBooking({{ booking.id }})">
+                                <i class="bi bi-play me-2"></i>
+                                Bắt đầu sử dụng
+                            </button>
+                        {% endif %}
+                        
+                        {% if booking.status == 'in_progress' %}
+                            <button type="button" class="btn btn-secondary w-100 mb-2" 
+                                    onclick="completeBooking({{ booking.id }})">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Hoàn thành
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                    
+                    {% if booking.can_cancel %}
+                        <button type="button" class="btn btn-danger w-100 mb-2" 
+                                onclick="cancelBooking({{ booking.id }})">
+                            <i class="bi bi-x-lg me-2"></i>
+                            Hủy đặt sân
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Contact Information -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-headset me-2"></i>
+                        Hỗ trợ khách hàng
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">
+                        <i class="bi bi-telephone me-2"></i>
+                        <a href="tel:+84123456789" class="text-decoration-none">0123 456 789</a>
+                    </p>
+                    <p class="mb-0">
+                        <i class="bi bi-envelope me-2"></i>
+                        <a href="mailto:support@fbmsports.com" class="text-decoration-none">support@fbmsports.com</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSRF Token for AJAX -->
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -23px;
+    top: 0;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border: 2px solid #007bff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-left: 15px;
+}
+
+@media print {
+    .navbar, .breadcrumb, .card:last-child {
+        display: none !important;
+    }
+    
+    .container {
+        max-width: 100% !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Check if booking is overdue and show warning
+    {% if booking.is_overdue %}
+        showAlert('warning', 'Đơn đặt sân này đã quá hạn sử dụng.');
+    {% endif %}
+    
+    // Auto-refresh for in-progress bookings
+    {% if booking.status == 'in_progress' %}
+        setInterval(function() {
+            // Check if booking should be auto-completed
+            var now = new Date();
+            var endTime = new Date('{{ booking.date|date:"Y-m-d" }}T{{ booking.time_slot.end_time|time:"H:i" }}:00');
+            
+            if (now > endTime) {
+                showAlert('info', 'Thời gian sử dụng sân đã hết. Vui lòng hoàn thành đơn đặt sân.');
+            }
+        }, 60000); // Check every minute
+    {% endif %}
+});
+
+function confirmPayment(bookingId) {
+    if (!confirm('Xác nhận đã nhận thanh toán bằng tiền mặt?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: `/bookings/${bookingId}/confirm-payment/`,
+        type: 'POST',
+        data: {
+            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+        },
+        success: function(response) {
+            if (response.success) {
+                showAlert('success', response.message);
+                // Reload page after 1 second
+                setTimeout(function() {
+                    location.reload();
+                }, 1000);
+            } else {
+                showAlert('danger', response.message);
+            }
+        },
+        error: function(xhr) {
+            showAlert('danger', 'Có lỗi xảy ra. Vui lòng thử lại.');
+        }
+    });
+}
+</script>
+{% endblock %}

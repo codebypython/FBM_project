@@ -1,0 +1,312 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quản lý người dùng - FBM Sports{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">
+                <i class="bi bi-people me-2"></i>
+                Quản lý người dùng
+            </h2>
+            <p class="text-muted">Quản lý tài khoản và thông tin người dùng trong hệ thống</p>
+        </div>
+    </div>
+    
+    <!-- Search and Filters -->
+    <div class="search-filters mb-4">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <label for="search" class="form-label">Tìm kiếm</label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Tên đăng nhập, họ tên, email...">
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <label for="role" class="form-label">Vai trò</label>
+                <select class="form-control" id="role" name="role">
+                    <option value="">Tất cả vai trò</option>
+                    {% for value, display in user_roles %}
+                        <option value="{{ value }}" {% if role_filter == value %}selected{% endif %}>
+                            {{ display }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>
+                    Lọc
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Users List -->
+    {% if page_obj %}
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Người dùng</th>
+                                <th>Email</th>
+                                <th>Vai trò</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày tham gia</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user_obj in page_obj %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if user_obj.profile.avatar %}
+                                            <img src="{{ user_obj.profile.avatar.url }}" alt="{{ user_obj.full_name }}" 
+                                                 class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" 
+                                                 style="width: 40px; height: 40px;">
+                                                <i class="bi bi-person-fill text-white"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-bold">{{ user_obj.full_name|default:user_obj.username }}</div>
+                                            <small class="text-muted">@{{ user_obj.username }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="mailto:{{ user_obj.email }}" class="text-decoration-none">
+                                        {{ user_obj.email }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if user_obj.role == 'admin' %}bg-danger
+                                        {% elif user_obj.role == 'manager' %}bg-warning
+                                        {% else %}bg-primary{% endif %}">
+                                        {{ user_obj.get_role_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if user_obj.is_active %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle me-1"></i>
+                                            Hoạt động
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-x-circle me-1"></i>
+                                            Vô hiệu hóa
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div>
+                                        <div>{{ user_obj.date_joined|date:"d/m/Y" }}</div>
+                                        <small class="text-muted">{{ user_obj.date_joined|timesince }} trước</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'accounts:user_edit' user_obj.id %}" 
+                                           class="btn btn-outline-primary" data-bs-toggle="tooltip" title="Chỉnh sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        
+                                        {% if not user_obj.is_admin or user.is_admin %}
+                                            {% if user_obj.is_active %}
+                                                <button type="button" class="btn btn-outline-warning" 
+                                                        onclick="toggleUserActive({{ user_obj.id }})"
+                                                        data-bs-toggle="tooltip" title="Vô hiệu hóa">
+                                                    <i class="bi bi-person-x"></i>
+                                                </button>
+                                            {% else %}
+                                                <button type="button" class="btn btn-outline-success" 
+                                                        onclick="toggleUserActive({{ user_obj.id }})"
+                                                        data-bs-toggle="tooltip" title="Kích hoạt">
+                                                    <i class="bi bi-person-check"></i>
+                                                </button>
+                                            {% endif %}
+                                        {% endif %}
+                                        
+                                        <button type="button" class="btn btn-outline-info" 
+                                                onclick="viewUserDetails({{ user_obj.id }})"
+                                                data-bs-toggle="tooltip" title="Xem chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <!-- No Results -->
+        <div class="text-center py-5">
+            <i class="bi bi-people text-muted" style="font-size: 4rem;"></i>
+            <h4 class="mt-3 text-muted">Không tìm thấy người dùng nào</h4>
+            <p class="text-muted">Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc</p>
+            <a href="{% url 'accounts:user_management' %}" class="btn btn-primary">
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Xem tất cả người dùng
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- User Details Modal -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1" aria-labelledby="userDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userDetailsModalLabel">
+                    <i class="bi bi-person-circle me-2"></i>
+                    Chi tiết người dùng
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="userDetailsContent">
+                <!-- Content will be loaded via AJAX -->
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="container-fluid bg-light py-4 mt-5">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number">{{ page_obj.paginator.count|default:0 }}</div>
+                    <div class="stats-label">Tổng người dùng</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card success">
+                    <div class="stats-number">{{ page_obj.object_list|length|default:0 }}</div>
+                    <div class="stats-label">Đang hoạt động</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card warning">
+                    <div class="stats-number">0</div>
+                    <div class="stats-label">Managers</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card info">
+                    <div class="stats-number">0</div>
+                    <div class="stats-label">Customers</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSRF Token for AJAX -->
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-submit form on filter change
+    $('#role').change(function() {
+        $(this).closest('form').submit();
+    });
+    
+    // Real-time search
+    var searchTimeout;
+    $('#search').on('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            $('#search').closest('form').submit();
+        }, 800);
+    });
+    
+    // Initialize tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip();
+});
+
+function viewUserDetails(userId) {
+    $('#userDetailsModal').modal('show');
+    
+    // Load user details via AJAX (simplified version)
+    $('#userDetailsContent').html(`
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Đang tải...</span>
+            </div>
+        </div>
+    `);
+    
+    // In a real implementation, you would load this via AJAX
+    setTimeout(function() {
+        $('#userDetailsContent').html(`
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                Chức năng xem chi tiết sẽ được phát triển trong phiên bản tiếp theo.
+            </div>
+            <p>Để xem và chỉnh sửa thông tin chi tiết, vui lòng sử dụng nút "Chỉnh sửa".</p>
+        `);
+    }, 1000);
+}
+</script>
+{% endblock %}

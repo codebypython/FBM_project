@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Đơn đặt sân - FBM Sports{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">
+                <i class="bi bi-calendar-check me-2"></i>
+                {% if user.is_customer %}
+                    Đơn đặt sân của tôi
+                {% else %}
+                    Quản lý đặt sân
+                {% endif %}
+            </h2>
+            <p class="text-muted">
+                {% if user.is_customer %}
+                    Theo dõi và quản lý các đơn đặt sân của bạn
+                {% else %}
+                    Quản lý tất cả đơn đặt sân trong hệ thống
+                {% endif %}
+            </p>
+        </div>
+    </div>
+    
+    <!-- Search and Filters -->
+    <div class="search-filters mb-4">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Tìm kiếm</label>
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search_query }}" placeholder="Tên khách hàng, số điện thoại, sân...">
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="status" class="form-label">Trạng thái</label>
+                <select class="form-control" id="status" name="status">
+                    <option value="">Tất cả trạng thái</option>
+                    {% for value, display in booking_statuses %}
+                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
+                            {{ display }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="date" class="form-label">Ngày đặt sân</label>
+                <input type="date" class="form-control" id="date" name="date" value="{{ date_filter }}">
+            </div>
+            
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>
+                    Lọc
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Bookings List -->
+    {% if page_obj %}
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Sân bóng</th>
+                                <th>Khách hàng</th>
+                                <th>Ngày & Giờ</th>
+                                <th>Trạng thái</th>
+                                <th>Thanh toán</th>
+                                <th>Tổng tiền</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for booking in page_obj %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if booking.field.image %}
+                                            <img src="{{ booking.field.image.url }}" alt="{{ booking.field.name }}" 
+                                                 class="rounded me-2" width="40" height="40" style="object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-light rounded me-2 d-flex align-items-center justify-content-center" 
+                                                 style="width: 40px; height: 40px;">
+                                                <i class="bi bi-image text-muted"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-bold">{{ booking.field.name }}</div>
+                                            <small class="text-muted">{{ booking.field.field_type.name }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <div class="fw-bold">{{ booking.customer_name }}</div>
+                                        <small class="text-muted">{{ booking.customer_phone }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <div class="fw-bold">{{ booking.date|date:"d/m/Y" }}</div>
+                                        <small class="text-muted">{{ booking.time_slot.name }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ booking.status }}">
+                                        {{ booking.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if booking.payment_status == 'paid' %}bg-success
+                                        {% elif booking.payment_status == 'pending' %}bg-warning
+                                        {% else %}bg-info{% endif %}">
+                                        {{ booking.get_payment_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-success">{{ booking.total_price|floatformat:0 }} VNĐ</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'bookings:booking_detail' booking.id %}" 
+                                           class="btn btn-outline-primary" data-bs-toggle="tooltip" title="Xem chi tiết">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        
+                                        {% if user.is_manager or user.is_admin %}
+                                            {% if booking.can_confirm %}
+                                                <button type="button" class="btn btn-outline-success" 
+                                                        onclick="confirmBooking({{ booking.id }})"
+                                                        data-bs-toggle="tooltip" title="Xác nhận">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </button>
+                                            {% endif %}
+                                            
+                                            {% if booking.can_start %}
+                                                <button type="button" class="btn btn-outline-info" 
+                                                        onclick="startBooking({{ booking.id }})"
+                                                        data-bs-toggle="tooltip" title="Bắt đầu">
+                                                    <i class="bi bi-play"></i>
+                                                </button>
+                                            {% endif %}
+                                            
+                                            {% if booking.status == 'in_progress' %}
+                                                <button type="button" class="btn btn-outline-secondary" 
+                                                        onclick="completeBooking({{ booking.id }})"
+                                                        data-bs-toggle="tooltip" title="Hoàn thành">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </button>
+                                            {% endif %}
+                                        {% endif %}
+                                        
+                                        {% if booking.can_cancel %}
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="cancelBooking({{ booking.id }})"
+                                                    data-bs-toggle="tooltip" title="Hủy đơn">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_filter %}&date={{ date_filter }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <!-- No Results -->
+        <div class="text-center py-5">
+            <i class="bi bi-calendar-x text-muted" style="font-size: 4rem;"></i>
+            <h4 class="mt-3 text-muted">Không có đơn đặt sân nào</h4>
+            <p class="text-muted">
+                {% if search_query or status_filter %}
+                    Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc
+                {% else %}
+                    Bạn chưa có đơn đặt sân nào
+                {% endif %}
+            </p>
+            <div class="mt-3">
+                {% if search_query or status_filter %}
+                    <a href="{% url 'bookings:booking_list' %}" class="btn btn-primary me-2">
+                        <i class="bi bi-arrow-clockwise me-1"></i>
+                        Xem tất cả
+                    </a>
+                {% endif %}
+                {% if user.is_customer %}
+                    <a href="{% url 'fields:field_list' %}" class="btn btn-success">
+                        <i class="bi bi-calendar-plus me-1"></i>
+                        Đặt sân mới
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- CSRF Token for AJAX -->
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-submit form on filter change
+    $('#status, #date').change(function() {
+        $(this).closest('form').submit();
+    });
+    
+    // Real-time search
+    var searchTimeout;
+    $('#search').on('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            $('#search').closest('form').submit();
+        }, 800);
+    });
+    
+    // Initialize tooltips
+    $('[data-bs-toggle="tooltip"]').tooltip();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Xóa sân - FBM Sports{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <!-- Header -->
+            <div class="mb-4">
+                <h2 class="mb-2 text-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Xác nhận xóa sân
+                </h2>
+            </div>
+
+            <!-- Confirmation Card -->
+            <div class="card border-danger">
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h5 class="alert-heading">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            Cảnh báo!
+                        </h5>
+                        <p class="mb-0">Bạn có chắc chắn muốn xóa sân này? Hành động này không thể hoàn tác.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Thông tin sân sẽ bị xóa:</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>Tên sân:</strong> {{ field.name }}</li>
+                            <li><strong>Loại sân:</strong> {{ field.field_type.name }}</li>
+                            <li><strong>Vị trí:</strong> {{ field.location }}</li>
+                            <li><strong>Trạng thái:</strong> 
+                                {% if field.is_active %}
+                                    <span class="badge bg-success">Hoạt động</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Không hoạt động</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'fields:field_management' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Hủy bỏ
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i>Xác nhận xóa
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

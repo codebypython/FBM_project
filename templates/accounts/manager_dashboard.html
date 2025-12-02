@@ -1,0 +1,420 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard Quản lý - FBM Sports{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-2">
+                        <i class="bi bi-speedometer2 me-2"></i>
+                        Dashboard Quản lý
+                    </h2>
+                    <p class="text-muted mb-0">Tổng quan hệ thống và thống kê chi tiết</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stats-number">{{ total_revenue|floatformat:0 }}</div>
+                        <div class="stats-label">Doanh thu (VNĐ)</div>
+                        {% if revenue_growth > 0 %}
+                            <small class="text-success">
+                                <i class="bi bi-arrow-up"></i> +{{ revenue_growth|floatformat:1 }}%
+                            </small>
+                        {% elif revenue_growth < 0 %}
+                            <small class="text-danger">
+                                <i class="bi bi-arrow-down"></i> {{ revenue_growth|floatformat:1 }}%
+                            </small>
+                        {% endif %}
+                    </div>
+                    <i class="bi bi-currency-dollar" style="font-size: 2.5rem; opacity: 0.7;"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card success">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stats-number">{{ total_bookings }}</div>
+                        <div class="stats-label">Tổng đặt sân</div>
+                        <small class="text-light">Hôm nay: {{ today_bookings }}</small>
+                    </div>
+                    <i class="bi bi-calendar-check" style="font-size: 2.5rem; opacity: 0.7;"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stats-number">{{ total_customers }}</div>
+                        <div class="stats-label">Khách hàng</div>
+                        <small class="text-light">Tổng: {{ total_users }} người dùng</small>
+                    </div>
+                    <i class="bi bi-people" style="font-size: 2.5rem; opacity: 0.7;"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="stats-number">{{ total_fields }}</div>
+                        <div class="stats-label">Sân hoạt động</div>
+                        <small class="text-light">Đang sử dụng</small>
+                    </div>
+                    <i class="bi bi-geo-alt" style="font-size: 2.5rem; opacity: 0.7;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Items -->
+    {% if pending_bookings > 0 or overdue_bookings > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning">
+                <h6 class="alert-heading">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Cần xử lý
+                </h6>
+                <div class="row">
+                    {% if pending_bookings > 0 %}
+                    <div class="col-md-6">
+                        <p class="mb-1">
+                            <strong>{{ pending_bookings }}</strong> đơn đặt sân chờ xác nhận
+                        </p>
+                        <a href="{% url 'bookings:booking_management' %}?status=pending" class="btn btn-sm btn-warning">
+                            Xem chi tiết
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% if overdue_bookings > 0 %}
+                    <div class="col-md-6">
+                        <p class="mb-1">
+                            <strong>{{ overdue_bookings }}</strong> đơn đặt sân quá hạn
+                        </p>
+                        <a href="{% url 'bookings:booking_management' %}?overdue=true" class="btn btn-sm btn-danger">
+                            Xử lý ngay
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Charts Section -->
+        <div class="col-lg-8">
+            <!-- Weekly Trend -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Xu hướng đặt sân (7 ngày qua)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="weeklyTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Distribution -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pie-chart me-2"></i>
+                        Phân bổ trạng thái đặt sân
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for stat in status_stats %}
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h4 class="
+                                    {% if stat.status == 'pending' %}text-warning
+                                    {% elif stat.status == 'confirmed' %}text-info
+                                    {% elif stat.status == 'completed' %}text-success
+                                    {% elif stat.status == 'cancelled' %}text-danger
+                                    {% else %}text-secondary{% endif %}
+                                ">{{ stat.count }}</h4>
+                                <small class="text-muted">{{ stat.status|capfirst }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Popular Field Types -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart me-2"></i>
+                        Loại sân phổ biến
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for field_type in popular_field_types %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <strong>{{ field_type.field__field_type__name }}</strong>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary">{{ field_type.booking_count }} đặt sân</span>
+                        </div>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {% widthratio field_type.booking_count popular_field_types.0.booking_count 100 %}%">
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="col-lg-4">
+            <!-- Today's Schedule -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-calendar-day me-2"></i>
+                        Lịch hôm nay ({{ today|date:"d/m/Y" }})
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if today_schedule %}
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            {% for booking in today_schedule %}
+                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 
+                                {% if booking.status == 'confirmed' %}bg-light{% elif booking.status == 'in_progress' %}bg-success bg-opacity-10{% endif %} rounded">
+                                <div>
+                                    <small class="fw-bold">{{ booking.time_slot.start_time|time:"H:i" }}</small>
+                                    <br>
+                                    <small class="text-muted">{{ booking.field.name }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <small class="fw-bold">{{ booking.customer_name }}</small>
+                                    <br>
+                                    <span class="badge 
+                                        {% if booking.status == 'pending' %}bg-warning
+                                        {% elif booking.status == 'confirmed' %}bg-info
+                                        {% elif booking.status == 'in_progress' %}bg-success
+                                        {% else %}bg-secondary{% endif %} badge-sm">
+                                        {{ booking.get_status_display }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-3">
+                            <i class="bi bi-calendar-x" style="font-size: 2rem;"></i>
+                            <br>
+                            Không có lịch đặt sân hôm nay
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Top Customers -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-star me-2"></i>
+                        Khách hàng VIP
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for customer in top_customers|slice:":5" %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <small class="fw-bold">{{ customer.full_name|default:customer.username }}</small>
+                            <br>
+                            <small class="text-muted">{{ customer.booking_count }} đặt sân</small>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-success fw-bold">{{ customer.total_spent|floatformat:0 }} VNĐ</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">Chưa có dữ liệu khách hàng</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Peak Hours -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-clock me-2"></i>
+                        Khung giờ cao điểm
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for hour in peak_hours %}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <small class="fw-bold">{{ hour.time_slot__name }}</small>
+                            <br>
+                            <small class="text-muted">{{ hour.time_slot__start_time|time:"H:i" }}</small>
+                        </div>
+                        <span class="badge bg-primary">{{ hour.booking_count }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">Chưa có dữ liệu</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-activity me-2"></i>
+                        Hoạt động gần đây
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Thời gian</th>
+                                    <th>Khách hàng</th>
+                                    <th>Sân</th>
+                                    <th>Ngày đặt</th>
+                                    <th>Trạng thái</th>
+                                    <th>Số tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in recent_bookings %}
+                                <tr>
+                                    <td>
+                                        <small>{{ booking.created_at|date:"d/m H:i" }}</small>
+                                    </td>
+                                    <td>{{ booking.customer_name }}</td>
+                                    <td>{{ booking.field.name }}</td>
+                                    <td>{{ booking.date|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <span class="status-badge status-{{ booking.status }}">
+                                            {{ booking.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td class="text-success fw-bold">{{ booking.total_price|floatformat:0 }} VNĐ</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">
+                                        Chưa có hoạt động nào
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.chart-container {
+    position: relative;
+    width: 100%;
+}
+
+@media print {
+    .btn, .navbar, .alert {
+        display: none !important;
+    }
+    
+    .stats-card {
+        page-break-inside: avoid;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Weekly Trend Chart
+const ctx = document.getElementById('weeklyTrendChart').getContext('2d');
+const weeklyData = {
+    labels: [
+        {% for day in weekly_trend %}
+            '{{ day.day_name|slice:":3" }} {{ day.date|date:"d/m" }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        label: 'Số đặt sân',
+        data: [
+            {% for day in weekly_trend %}
+                {{ day.count }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        borderColor: 'rgb(75, 192, 192)',
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        tension: 0.4,
+        fill: true
+    }]
+};
+
+new Chart(ctx, {
+    type: 'line',
+    data: weeklyData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Auto refresh every 5 minutes
+setInterval(function() {
+    window.location.reload();
+}, 300000);
+</script>
+{% endblock %}

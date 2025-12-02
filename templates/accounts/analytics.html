@@ -1,0 +1,416 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Phân tích chi tiết - FBM Sports{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-2">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Phân tích chi tiết
+                    </h2>
+                    <p class="text-muted mb-0">Báo cáo và thống kê nâng cao</p>
+                </div>
+                <div>
+                    <a href="{% url 'accounts:manager_dashboard' %}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Dashboard
+                    </a>
+                    <button class="btn btn-primary" onclick="exportData()">
+                        <i class="bi bi-download me-1"></i>
+                        Xuất báo cáo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label for="start_date" class="form-label">Từ ngày</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" 
+                                   value="{{ start_date|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="end_date" class="form-label">Đến ngày</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" 
+                                   value="{{ end_date|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-funnel me-1"></i>
+                                Lọc
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="btn-group w-100" role="group">
+                                <button type="button" class="btn btn-outline-secondary" onclick="setDateRange(7)">
+                                    7 ngày
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setDateRange(30)">
+                                    30 ngày
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setDateRange(90)">
+                                    3 tháng
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stats-card">
+                <div class="stats-number">{{ total_revenue|floatformat:0 }}</div>
+                <div class="stats-label">Tổng doanh thu (VNĐ)</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stats-card success">
+                <div class="stats-number">{{ total_bookings }}</div>
+                <div class="stats-label">Tổng đặt sân</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stats-card info">
+                <div class="stats-number">{{ confirmed_bookings }}</div>
+                <div class="stats-label">Đặt sân thành công</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="stats-card warning">
+                <div class="stats-number">{{ conversion_rate|floatformat:1 }}%</div>
+                <div class="stats-label">Tỷ lệ chuyển đổi</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Daily Revenue Chart -->
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Doanh thu theo ngày
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 400px;">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Field Performance -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pie-chart me-2"></i>
+                        Hiệu suất theo loại sân
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 400px;">
+                        <canvas id="fieldTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Time Slot Analysis -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock me-2"></i>
+                        Phân tích khung giờ
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Khung giờ</th>
+                                    <th>Số đặt sân</th>
+                                    <th>Doanh thu</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for slot in time_slot_analysis %}
+                                <tr>
+                                    <td>{{ slot.time_slot__name }}</td>
+                                    <td>{{ slot.booking_count }}</td>
+                                    <td class="text-success">{{ slot.revenue|floatformat:0 }} VNĐ</td>
+                                    <td>
+                                        <div class="progress" style="height: 5px;">
+                                            <div class="progress-bar" 
+                                                 style="width: {% widthratio slot.booking_count total_bookings 100 %}%">
+                                            </div>
+                                        </div>
+                                        <small>{% widthratio slot.booking_count total_bookings 100 %}%</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Customers -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people me-2"></i>
+                        Khách hàng hàng đầu
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Khách hàng</th>
+                                    <th>Số đặt sân</th>
+                                    <th>Chi tiêu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for customer in customer_analysis|slice:":10" %}
+                                <tr>
+                                    <td>{{ customer.user__full_name|default:customer.user__username }}</td>
+                                    <td>{{ customer.booking_count }}</td>
+                                    <td class="text-success fw-bold">{{ customer.total_spent|floatformat:0 }} VNĐ</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Performance Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-table me-2"></i>
+                        Hiệu suất chi tiết theo loại sân
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Loại sân</th>
+                                    <th>Số đặt sân</th>
+                                    <th>Doanh thu</th>
+                                    <th>Doanh thu trung bình</th>
+                                    <th>% Tổng doanh thu</th>
+                                    <th>Xu hướng</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for field in field_performance %}
+                                <tr>
+                                    <td class="fw-bold">{{ field.field__field_type__name }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ field.booking_count }}</span>
+                                    </td>
+                                    <td class="text-success fw-bold">{{ field.revenue|floatformat:0 }} VNĐ</td>
+                                    <td>
+                                        {% if field.booking_count > 0 %}
+                                            {{ field.revenue|div:field.booking_count|floatformat:0 }} VNĐ
+                                        {% else %}
+                                            0 VNĐ
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress me-2" style="width: 60px; height: 8px;">
+                                                <div class="progress-bar" 
+                                                     style="width: {% widthratio field.revenue total_revenue 100 %}%">
+                                                </div>
+                                            </div>
+                                            <small>{% widthratio field.revenue total_revenue 100 %}%</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-arrow-up text-success"></i>
+                                        <small class="text-muted">Tăng</small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Revenue Chart
+const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+const revenueData = {
+    labels: [
+        {% for day in daily_revenue %}
+            '{{ day.date|date:"d/m" }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        label: 'Doanh thu (VNĐ)',
+        data: [
+            {% for day in daily_revenue %}
+                {{ day.revenue|default:0 }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        borderColor: 'rgb(75, 192, 192)',
+        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+        tension: 0.4,
+        fill: true
+    }, {
+        label: 'Số đặt sân',
+        data: [
+            {% for day in daily_revenue %}
+                {{ day.booking_count|default:0 }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        borderColor: 'rgb(255, 99, 132)',
+        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+        tension: 0.4,
+        yAxisID: 'y1'
+    }]
+};
+
+new Chart(revenueCtx, {
+    type: 'line',
+    data: revenueData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                    display: true,
+                    text: 'Doanh thu (VNĐ)'
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: 'Số đặt sân'
+                },
+                grid: {
+                    drawOnChartArea: false,
+                }
+            }
+        }
+    }
+});
+
+// Field Type Performance Chart
+const fieldCtx = document.getElementById('fieldTypeChart').getContext('2d');
+const fieldData = {
+    labels: [
+        {% for field in field_performance %}
+            '{{ field.field__field_type__name }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        data: [
+            {% for field in field_performance %}
+                {{ field.revenue|default:0 }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        backgroundColor: [
+            '#FF6384',
+            '#36A2EB',
+            '#FFCE56',
+            '#4BC0C0',
+            '#9966FF'
+        ]
+    }]
+};
+
+new Chart(fieldCtx, {
+    type: 'doughnut',
+    data: fieldData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Date range functions
+function setDateRange(days) {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - days);
+    
+    document.getElementById('start_date').value = startDate.toISOString().split('T')[0];
+    document.getElementById('end_date').value = endDate.toISOString().split('T')[0];
+}
+
+function exportData() {
+    // Create CSV content
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Loại sân,Số đặt sân,Doanh thu\n";
+    
+    {% for field in field_performance %}
+    csvContent += "{{ field.field__field_type__name }},{{ field.booking_count }},{{ field.revenue }}\n";
+    {% endfor %}
+    
+    // Download CSV
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "analytics_report_{{ start_date|date:'Y-m-d' }}_{{ end_date|date:'Y-m-d' }}.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tạo giá hàng loạt - FBM Sports{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="mb-4">
+                <h2 class="mb-2">
+                    <i class="bi bi-lightning-charge me-2"></i>
+                    Tạo bảng giá hàng loạt
+                </h2>
+                <p class="text-muted">Tạo bảng giá cho tất cả khung giờ của một loại sân</p>
+            </div>
+
+            <!-- Info Alert -->
+            <div class="alert alert-info">
+                <h6 class="alert-heading">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Hướng dẫn
+                </h6>
+                <ul class="mb-0">
+                    <li>Chọn loại sân và giá cơ bản</li>
+                    <li>Hệ số cuối tuần: giá cuối tuần = giá cơ bản × hệ số cuối tuần</li>
+                    <li>Hệ số giờ cao điểm: giá × hệ số giờ cao điểm (cho các khung giờ được chọn)</li>
+                    <li>Bảng giá sẽ được tạo cho tất cả khung giờ hoạt động</li>
+                </ul>
+            </div>
+
+            <!-- Form -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <h5 class="mb-3">Thông tin cơ bản</h5>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.field_type.id_for_label }}" class="form-label">{{ form.field_type.label }}</label>
+                                {{ form.field_type }}
+                                {% if form.field_type.errors %}
+                                    <div class="text-danger">{{ form.field_type.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.base_price.id_for_label }}" class="form-label">{{ form.base_price.label }}</label>
+                                {{ form.base_price }}
+                                <small class="text-muted d-block">Giá cơ bản cho các khung giờ thường</small>
+                                {% if form.base_price.errors %}
+                                    <div class="text-danger">{{ form.base_price.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.effective_date.id_for_label }}" class="form-label">{{ form.effective_date.label }}</label>
+                                {{ form.effective_date }}
+                                {% if form.effective_date.errors %}
+                                    <div class="text-danger">{{ form.effective_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="mb-4">
+                            <h5 class="mb-3">Hệ số giá</h5>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.weekend_multiplier.id_for_label }}" class="form-label">{{ form.weekend_multiplier.label }}</label>
+                                {{ form.weekend_multiplier }}
+                                <small class="text-muted d-block">Ví dụ: 1.2 = giá cuối tuần cao hơn 20%</small>
+                                {% if form.weekend_multiplier.errors %}
+                                    <div class="text-danger">{{ form.weekend_multiplier.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.peak_multiplier.id_for_label }}" class="form-label">{{ form.peak_multiplier.label }}</label>
+                                {{ form.peak_multiplier }}
+                                <small class="text-muted d-block">Ví dụ: 1.5 = giá giờ cao điểm cao hơn 50%</small>
+                                {% if form.peak_multiplier.errors %}
+                                    <div class="text-danger">{{ form.peak_multiplier.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="mb-4">
+                            <h5 class="mb-3">{{ form.peak_hours.label }}</h5>
+                            <small class="text-muted d-block mb-2">Chọn các khung giờ muốn áp dụng hệ số cao điểm</small>
+                            
+                            <div class="row">
+                                {% for choice in form.peak_hours %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="form-check">
+                                        {{ choice }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            {% if form.peak_hours.errors %}
+                                <div class="text-danger mt-2">{{ form.peak_hours.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <hr>
+
+                        <!-- Preview calculation -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">Ví dụ tính giá</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Loại khung giờ</th>
+                                            <th>Giá ngày thường</th>
+                                            <th>Giá cuối tuần</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Khung giờ thường</td>
+                                            <td class="text-success fw-bold">Giá cơ bản</td>
+                                            <td class="text-warning fw-bold">Giá cơ bản × Hệ số cuối tuần</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Khung giờ cao điểm</td>
+                                            <td class="text-success fw-bold">Giá cơ bản × Hệ số cao điểm</td>
+                                            <td class="text-warning fw-bold">Giá cơ bản × Hệ số cuối tuần × Hệ số cao điểm</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'fields:pricing_management' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>Tạo bảng giá
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-check-input {
+    margin-right: 0.5rem;
+}
+</style>
+{% endblock %}
+
