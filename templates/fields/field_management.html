@@ -30,16 +30,16 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <form method="get" class="row g-3">
+                    <form method="get" class="row g-3 align-items-end">
                         <div class="col-md-4">
-                            <label class="form-label">Tìm kiếm</label>
-                            <input type="text" name="search" class="form-control" 
+                            <label for="search" class="form-label">Tìm kiếm</label>
+                            <input type="text" id="search" name="search" class="form-control" 
                                    placeholder="Tên sân, vị trí..."
                                    value="{{ search_query }}">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Loại sân</label>
-                            <select name="field_type" class="form-select">
+                            <label for="field_type" class="form-label">Loại sân</label>
+                            <select id="field_type" name="field_type" class="form-select">
                                 <option value="">Tất cả</option>
                                 {% for type in field_types %}
                                     <option value="{{ type.id }}" {% if field_type_filter == type.id|stringformat:"s" %}selected{% endif %}>
@@ -48,7 +48,20 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-2 d-flex align-items-end">
+                        <div class="col-md-3">
+                            <label for="sort" class="form-label">Sắp xếp</label>
+                            <select id="sort" name="sort" class="form-select">
+                                <option value="id_asc" {% if sort == 'id_asc' %}selected{% endif %}>ID tăng dần</option>
+                                <option value="id_desc" {% if sort == 'id_desc' %}selected{% endif %}>ID giảm dần</option>
+                                <option value="name_asc" {% if sort == 'name_asc' %}selected{% endif %}>Tên A→Z</option>
+                                <option value="name_desc" {% if sort == 'name_desc' %}selected{% endif %}>Tên Z→A</option>
+                                <option value="type_asc" {% if sort == 'type_asc' %}selected{% endif %}>Loại sân A→Z</option>
+                                <option value="type_desc" {% if sort == 'type_desc' %}selected{% endif %}>Loại sân Z→A</option>
+                                <option value="created_desc" {% if sort == 'created_desc' %}selected{% endif %}>Mới nhất</option>
+                                <option value="created_asc" {% if sort == 'created_asc' %}selected{% endif %}>Cũ nhất</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="bi bi-search me-2"></i>Tìm kiếm
                             </button>
@@ -137,12 +150,12 @@
                             <ul class="pagination justify-content-center">
                                 {% if page_obj.has_previous %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if field_type_filter %}&field_type={{ field_type_filter }}{% endif %}">
+                                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if field_type_filter %}&field_type={{ field_type_filter }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}">
                                             <i class="bi bi-chevron-double-left"></i>
                                         </a>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if field_type_filter %}&field_type={{ field_type_filter }}{% endif %}">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if field_type_filter %}&field_type={{ field_type_filter }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}">
                                             <i class="bi bi-chevron-left"></i>
                                         </a>
                                     </li>
@@ -156,12 +169,12 @@
 
                                 {% if page_obj.has_next %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if field_type_filter %}&field_type={{ field_type_filter }}{% endif %}">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if field_type_filter %}&field_type={{ field_type_filter }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}">
                                             <i class="bi bi-chevron-right"></i>
                                         </a>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if field_type_filter %}&field_type={{ field_type_filter }}{% endif %}">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if field_type_filter %}&field_type={{ field_type_filter }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}">
                                             <i class="bi bi-chevron-double-right"></i>
                                         </a>
                                     </li>
@@ -216,5 +229,15 @@
     padding: 0.25rem 0.5rem;
 }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#field_type, #sort').change(function() {
+        $(this).closest('form').submit();
+    });
+});
+</script>
 {% endblock %}
 

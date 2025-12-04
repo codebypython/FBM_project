@@ -48,6 +48,23 @@ $(document).ready(function() {
             submitBtn.removeClass('loading').prop('disabled', false);
         }, 3000);
     });
+
+    // Click to open layout / campus images in modal
+    $(document).on('click', '.js-layout-image', function (e) {
+        e.preventDefault();
+        var src = $(this).data('image-src') || this.src;
+        if (!src) {
+            return;
+        }
+        openImageModal(src);
+    });
+
+    // Close modal on ESC key
+    $(document).on('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeImageModal();
+        }
+    });
 });
 
 // Field booking functions
@@ -339,15 +356,51 @@ function initializeDatePickers() {
     $('input[type="date"]').attr('min', today);
 }
 
+// Image modal & zoom for campus map / layouts
+let currentZoom = 1;
+
+function openImageModal(src) {
+    if (!src) {
+        return;
+    }
+    const modal = document.getElementById('image-modal');
+    const img = document.getElementById('image-modal-img');
+    currentZoom = 1;
+    img.src = src;
+    img.style.transform = 'scale(1)';
+    modal.style.display = 'block';
+    // Lock background scroll
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('image-modal');
+    modal.style.display = 'none';
+    // Restore background scroll
+    document.body.style.overflow = '';
+}
+
+function zoomImage(delta) {
+    const img = document.getElementById('image-modal-img');
+    currentZoom = Math.min(Math.max(currentZoom + delta, 0.5), 3);
+    img.style.transform = `scale(${currentZoom})`;
+}
+
+function resetZoom() {
+    const img = document.getElementById('image-modal-img');
+    currentZoom = 1;
+    img.style.transform = 'scale(1)';
+}
+
 // Initialize on page load
 $(document).ready(function() {
     initializeDatePickers();
-    
+
     // Real-time search setup
     if ($('#search-input').length) {
         setupRealTimeSearch('#search-input', '#search-results');
     }
-    
+
     // Image preview setup
     $('input[type="file"][accept*="image"]').change(function() {
         var previewId = $(this).data('preview');

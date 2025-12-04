@@ -1,15 +1,22 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required, user_passes_test
+from datetime import datetime
+
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from datetime import datetime
 
 from .models import Booking, BookingHistory
-from fields.models import Field, TimeSlot, FieldPricing
+from accounts.notification_utils import (
+    notify_booking_cancelled,
+    notify_booking_confirmed,
+    notify_booking_started,
+    notify_payment_reminder,
+)
+from fields.models import Field, FieldPricing, TimeSlot
 
 
 @login_required
@@ -86,6 +93,10 @@ def create_booking_view(request, field_id):
             changed_by=request.user,
             comment='Đơn đặt sân được tạo'
         )
+
+        # Optional: nhắc thanh toán nếu có tiền cọc/tổng tiền lớn
+        if booking.get_remaining_amount() > 0:
+            notify_payment_reminder(booking)
         
         messages.success(request, 'Đặt sân thành công! Đơn đặt sân của bạn đang chờ xác nhận.')
         return redirect('bookings:booking_detail', booking_id=booking.id)
@@ -181,6 +192,9 @@ def cancel_booking_view(request, booking_id):
         changed_by=request.user,
         comment=f'Đơn đặt sân bị hủy: {cancellation_reason}'
     )
+
+    # Thông báo cho khách hàng
+    notify_booking_cancelled(booking, cancellation_reason)
     
     return JsonResponse({'success': True, 'message': 'Đã hủy đơn đặt sân thành công.'})
 
@@ -211,6 +225,9 @@ def confirm_booking_view(request, booking_id):
         changed_by=request.user,
         comment=f'Đơn đặt sân được xác nhận bởi {request.user.full_name}'
     )
+
+    # Thông báo xác nhận cho khách hàng
+    notify_booking_confirmed(booking)
     
     return JsonResponse({'success': True, 'message': 'Đã xác nhận đơn đặt sân thành công.'})
 
@@ -234,6 +251,10 @@ def confirm_payment_view(request, booking_id):
         changed_by=request.user,
         comment=f'Xác nhận thanh toán bằng tiền mặt - {request.user.full_name}'
     )
+
+    # Nhắc lại trạng thái thanh toán đã hoàn tất
+    title_message = f"Thanh toán đơn đặt sân #{booking.id} đã được xác nhận."
+    notify_payment_reminder(booking)
     
     return JsonResponse({'success': True, 'message': 'Đã xác nhận thanh toán thành công.'})
 
@@ -257,6 +278,9 @@ def start_booking_view(request, booking_id):
         changed_by=request.user,
         comment=f'Bắt đầu sử dụng sân - {request.user.full_name}'
     )
+
+    # Thông báo bắt đầu sử dụng sân cho khách
+    notify_booking_started(booking)
     
     return JsonResponse({'success': True, 'message': 'Đã bắt đầu sử dụng sân.'})
 

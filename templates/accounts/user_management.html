@@ -32,7 +32,7 @@
             
             <div class="col-md-4">
                 <label for="role" class="form-label">Vai trò</label>
-                <select class="form-control" id="role" name="role">
+                <select class="form-select" id="role" name="role">
                     <option value="">Tất cả vai trò</option>
                     {% for value, display in user_roles %}
                         <option value="{{ value }}" {% if role_filter == value %}selected{% endif %}>

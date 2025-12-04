@@ -98,14 +98,22 @@ body {
 }
 
 /* Forms */
-.form-control {
+:root {
+    --input-height: 48px;
+}
+
+.form-control,
+.form-select {
     border-radius: 8px;
     border: 2px solid #e9ecef;
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 1rem;
+    height: var(--input-height);
+    line-height: 1.5;
     transition: all 0.3s ease;
 }
 
-.form-control:focus {
+.form-control:focus,
+.form-select:focus {
     border-color: var(--secondary-color);
     box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
 }
@@ -114,6 +122,27 @@ body {
     font-weight: 600;
     color: var(--dark-color);
     margin-bottom: 0.5rem;
+}
+
+/* Make input-group elements equal height */
+.input-group .form-control,
+.input-group .form-select {
+    height: var(--input-height);
+}
+
+.input-group-text {
+    height: var(--input-height);
+    border-radius: 8px 0 0 8px;
+    border: 2px solid #e9ecef;
+    border-right: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Normalize date input appearance */
+input[type="date"].form-control {
+    padding-right: 2.5rem;
 }
 
 /* Field Cards */
@@ -324,6 +353,72 @@ body {
 .stats-card .stats-label {
     font-size: 1rem;
     opacity: 0.9;
+}
+
+/* Image modal overlay */
+.image-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1080;
+}
+
+.image-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+}
+
+.image-modal-panel {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    margin: auto;
+    top: 5%;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.image-modal-toolbar {
+    padding: 0.5rem 0.75rem;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.image-modal-content {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #111;
+}
+
+.image-modal-content img {
+    max-width: 100%;
+    max-height: 100%;
+    transition: transform 0.2s ease;
+    cursor: grab;
+}
+
+.image-modal-close {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    border-radius: 50%;
+    padding: 0.25rem 0.5rem;
+}
+
+.campus-map-thumb {
+    cursor: zoom-in;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
 /* Loading States */

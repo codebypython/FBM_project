@@ -29,6 +29,24 @@ class FieldForm(forms.ModelForm):
             'is_active': 'Hoạt động',
         }
 
+    def clean_name(self):
+        """
+        Không cho phép tạo hoặc sửa sân với tên đã được sân khác sử dụng
+        (không phân biệt hoa/thường, bỏ qua chính bản thân instance hiện tại).
+        """
+        name = self.cleaned_data.get('name', '').strip()
+        if not name:
+            return name
+
+        qs = Field.objects.filter(name__iexact=name)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            raise forms.ValidationError('Tên sân này đã được sử dụng cho một sân khác. Vui lòng chọn tên khác.')
+
+        return name
+
 
 class FieldTypeForm(forms.ModelForm):
     """Form for creating and editing field types"""

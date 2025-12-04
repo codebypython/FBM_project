@@ -96,7 +96,7 @@
             
             <div class="col-md-2">
                 <label for="status" class="form-label">Trạng thái</label>
-                <select class="form-control" id="status" name="status">
+                <select class="form-select" id="status" name="status">
                     <option value="">Tất cả</option>
                     {% for value, display in booking_statuses %}
                         <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
@@ -113,7 +113,7 @@
             
             <div class="col-md-3">
                 <label for="date_range" class="form-label">Khoảng thời gian</label>
-                <select class="form-control" id="date_range" name="date_range">
+                <select class="form-select" id="date_range" name="date_range">
                     <option value="">Chọn khoảng thời gian</option>
                     <option value="today">Hôm nay</option>
                     <option value="tomorrow">Ngày mai</option>

@@ -203,6 +203,7 @@ def field_management_view(request):
     """Field management view for managers and admins"""
     search_query = request.GET.get('search', '')
     field_type_filter = request.GET.get('field_type', '')
+    sort = request.GET.get('sort', 'id_asc')
     
     fields = Field.objects.all()
     
@@ -215,8 +216,20 @@ def field_management_view(request):
     
     if field_type_filter:
         fields = fields.filter(field_type_id=field_type_filter)
-    
-    fields = fields.order_by('name')
+
+    # Sorting
+    sort_map = {
+        'id_asc': 'id',
+        'id_desc': '-id',
+        'name_asc': 'name',
+        'name_desc': '-name',
+        'type_asc': 'field_type__name',
+        'type_desc': '-field_type__name',
+        'created_asc': 'created_at',
+        'created_desc': '-created_at',
+    }
+    order_by = sort_map.get(sort, 'id')
+    fields = fields.order_by(order_by, 'id')
     
     # Pagination
     paginator = Paginator(fields, 20)
@@ -230,6 +243,7 @@ def field_management_view(request):
         'search_query': search_query,
         'field_type_filter': field_type_filter,
         'field_types': field_types,
+        'sort': sort,
     }
     return render(request, 'fields/field_management.html', context)
 

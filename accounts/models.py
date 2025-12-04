@@ -1,7 +1,17 @@
 from django.contrib.auth.models import AbstractUser
-from django.db import models
 from django.core.validators import RegexValidator
+from django.db import models
 from django.utils import timezone
+
+
+def avatar_upload_to(instance, filename):
+    """
+    Store user avatars in a per-user folder:
+    media/avatars/<username>/<filename>
+    """
+    user = instance.user
+    username = user.username or f"user_{user.pk or 'temp'}"
+    return f"avatars/{username}/{filename}"
 
 
 class User(AbstractUser):
@@ -90,7 +100,7 @@ class UserProfile(models.Model):
     """Extended profile for users"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     avatar = models.ImageField(
-        upload_to='avatars/',
+        upload_to=avatar_upload_to,
         blank=True,
         null=True,
         verbose_name='Ảnh đại diện'

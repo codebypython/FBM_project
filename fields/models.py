@@ -1,7 +1,20 @@
-from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
-from django.utils import timezone
 from datetime import time
+
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+from django.utils import timezone
+
+
+def field_image_upload_to(instance, filename):
+    """
+    Store field images in a per-field folder:
+    media/fields/<field_id>/<filename>
+
+    Lưu ý: với sân mới chưa có ID, tạm dùng 'temp'.
+    Khi chỉnh sửa lại sau khi đã có ID, đường dẫn sẽ ổn định theo ID.
+    """
+    field_id = instance.pk or 'temp'
+    return f"fields/{field_id}/{filename}"
 
 
 class FieldType(models.Model):
@@ -70,14 +83,14 @@ class Field(models.Model):
     )
     
     image = models.ImageField(
-        upload_to='fields/',
+        upload_to=field_image_upload_to,
         blank=True,
         null=True,
         verbose_name='Hình ảnh sân'
     )
     
     layout_image = models.ImageField(
-        upload_to='fields/layouts/',
+        upload_to=field_image_upload_to,
         blank=True,
         null=True,
         verbose_name='Sơ đồ vị trí'

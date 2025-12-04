@@ -21,7 +21,11 @@
                     <div class="row">
                         <div class="col-md-6">
                             {% if field.image %}
-                                <img src="{{ field.image.url }}" alt="{{ field.name }}" class="img-fluid rounded mb-3">
+                                <img src="{{ field.image.url }}"
+                                     alt="{{ field.name }}"
+                                     class="img-fluid rounded mb-3 js-layout-image"
+                                     data-image-src="{{ field.image.url }}"
+                                     style="cursor: zoom-in;">
                             {% else %}
                                 <div class="bg-light rounded d-flex align-items-center justify-content-center mb-3" style="height: 300px;">
                                     <i class="bi bi-image text-muted" style="font-size: 4rem;"></i>
@@ -54,7 +58,14 @@
                             {% if field.layout_image %}
                                 <div class="mb-3">
                                     <h6 class="fw-bold">Sơ đồ vị trí:</h6>
-                                    <img src="{{ field.layout_image.url }}" alt="Sơ đồ {{ field.name }}" class="img-fluid rounded" style="max-height: 200px;">
+                                    <img src="{{ field.layout_image.url }}"
+                                         alt="Sơ đồ {{ field.name }}"
+                                         class="img-fluid rounded js-layout-image"
+                                         data-image-src="{{ field.layout_image.url }}"
+                                         style="max-height: 200px; cursor: zoom-in;">
+                                    <small class="text-muted d-block mt-1">
+                                        Bấm vào hình để xem rõ hơn và phóng to / thu nhỏ.
+                                    </small>
                                 </div>
                             {% endif %}
                         </div>

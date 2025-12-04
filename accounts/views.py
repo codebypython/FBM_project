@@ -1,15 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import user_passes_test
 
 from .models import User, UserProfile
 from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm, UserManagementForm
+from .notification_utils import mark_all_notifications_read
 
 
 def register_view(request):
@@ -216,3 +216,20 @@ def dashboard_view(request):
         return redirect('accounts:user_management')
     else:
         return redirect('fields:field_list')
+
+
+@login_required
+def notification_list_view(request):
+    """Notification center for current user"""
+    notifications = request.user.notifications.all().order_by('-created_at')
+
+    # Mark all as read if requested
+    if request.GET.get('mark_read') == '1':
+        mark_all_notifications_read(request.user)
+        messages.success(request, 'Đã đánh dấu tất cả thông báo là đã đọc.')
+        return redirect('accounts:notifications')
+
+    context = {
+        'notifications': notifications,
+    }
+    return render(request, 'accounts/notification_list.html', context)

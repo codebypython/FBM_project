@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Thông báo - FBM Sports{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">
+            <i class="bi bi-bell-fill me-2"></i>Thông báo
+        </h3>
+        {% if notifications %}
+        <a href="?mark_read=1" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-check2-all me-1"></i>
+            Đánh dấu tất cả đã đọc
+        </a>
+        {% endif %}
+    </div>
+
+    {% if notifications %}
+        <div class="list-group">
+            {% for n in notifications %}
+            <a href="{{ n.action_url|default:'#' }}"
+               class="list-group-item list-group-item-action d-flex justify-content-between align-items-start {% if not n.is_read %}bg-light{% endif %}">
+                <div class="me-3">
+                    <i class="bi {{ n.get_type_icon }} {{ n.get_priority_class }} me-2" style="font-size:1.4rem;"></i>
+                </div>
+                <div class="flex-fill">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="mb-1 fw-bold">{{ n.title }}</h6>
+                        <small class="text-muted">{{ n.created_at|date:"d/m/Y H:i" }}</small>
+                    </div>
+                    <p class="mb-1 text-muted">{{ n.message }}</p>
+                    {% if n.action_text and n.action_url %}
+                        <span class="badge bg-primary">{{ n.action_text }}</span>
+                    {% endif %}
+                </div>
+                {% if not n.is_read %}
+                    <span class="badge bg-danger ms-3">Mới</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-1"></i>
+            Hiện chưa có thông báo nào.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+

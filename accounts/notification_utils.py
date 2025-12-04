@@ -1,38 +1,40 @@
 from django.urls import reverse
-from .notification_models import Notification, NotificationPreference
+from django.utils import timezone
+
+from .models import Notification, NotificationPreference
 
 
 def create_notification(
-    recipient, 
-    title, 
-    message, 
+    recipient,
+    title,
+    message,
     notification_type='system_announcement',
     priority='normal',
     action_url=None,
     action_text=None,
-    related_object=None
+    related_object=None,
 ):
-    """Create a new notification"""
-    
+    """Create a new notification (respecting user preferences)."""
+
     # Check user preferences
     try:
         prefs = recipient.notification_preferences
     except NotificationPreference.DoesNotExist:
         # Create default preferences
         prefs = NotificationPreference.objects.create(user=recipient)
-    
-    # Check if user wants this type of notification
+
+    # Check if user wants this type of in-app notification
     pref_field = f'app_{notification_type}'
     if hasattr(prefs, pref_field) and not getattr(prefs, pref_field):
         return None
-    
+
     # Set related object info if provided
     related_object_type = None
     related_object_id = None
     if related_object:
         related_object_type = related_object.__class__.__name__.lower()
         related_object_id = related_object.id
-    
+
     notification = Notification.objects.create(
         recipient=recipient,
         title=title,
@@ -42,9 +44,9 @@ def create_notification(
         action_url=action_url,
         action_text=action_text,
         related_object_type=related_object_type,
-        related_object_id=related_object_id
+        related_object_id=related_object_id,
     )
-    
+
     return notification
 
 
@@ -90,6 +92,29 @@ def notify_booking_cancelled(booking, reason=''):
         action_url=action_url,
         action_text='Xem chi tiết',
         related_object=booking
+    )
+
+
+def notify_booking_started(booking):
+    """Send notification when booking is started (customer is on the field)."""
+    title = f"Bắt đầu sử dụng sân {booking.field.name}"
+    message = (
+        f"Đơn đặt sân #{booking.id} đã được bắt đầu. "
+        f"Ngày: {booking.date.strftime('%d/%m/%Y')}, "
+        f"Giờ: {booking.time_slot.name}."
+    )
+
+    action_url = reverse('bookings:booking_detail', args=[booking.id])
+
+    create_notification(
+        recipient=booking.user,
+        title=title,
+        message=message,
+        notification_type='booking_reminder',
+        priority='normal',
+        action_url=action_url,
+        action_text='Xem chi tiết',
+        related_object=booking,
     )
 
 
@@ -205,5 +230,5 @@ def mark_all_notifications_read(user):
     """Mark all notifications as read for user"""
     user.notifications.filter(is_read=False).update(
         is_read=True,
-        read_at=timezone.now()
+        read_at=timezone.now(),
     )
