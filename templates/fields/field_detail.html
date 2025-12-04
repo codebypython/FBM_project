@@ -21,11 +21,11 @@
                     <div class="row">
                         <div class="col-md-6">
                             {% if field.image %}
-                                <img src="{{ field.image.url }}"
-                                     alt="{{ field.name }}"
-                                     class="img-fluid rounded mb-3 js-layout-image"
+                                <div class="field-image-9x16 mb-3 js-layout-image"
                                      data-image-src="{{ field.image.url }}"
                                      style="cursor: zoom-in;">
+                                    <img src="{{ field.image.url }}" alt="{{ field.name }}">
+                                </div>
                             {% else %}
                                 <div class="bg-light rounded d-flex align-items-center justify-content-center mb-3" style="height: 300px;">
                                     <i class="bi bi-image text-muted" style="font-size: 4rem;"></i>
@@ -45,24 +45,24 @@
                             </p>
                             
                             {% if field.description %}
-                                <p class="mb-3">{{ field.description }}</p>
+                                <p class="mb-3">{{ field.description|linebreaksbr }}</p>
                             {% endif %}
                             
                             {% if field.facilities %}
                                 <div class="mb-3">
                                     <h6 class="fw-bold">Tiện ích:</h6>
-                                    <p class="text-muted">{{ field.facilities }}</p>
+                                    <p class="text-muted mb-0">{{ field.facilities|linebreaksbr }}</p>
                                 </div>
                             {% endif %}
                             
                             {% if field.layout_image %}
                                 <div class="mb-3">
                                     <h6 class="fw-bold">Sơ đồ vị trí:</h6>
-                                    <img src="{{ field.layout_image.url }}"
-                                         alt="Sơ đồ {{ field.name }}"
-                                         class="img-fluid rounded js-layout-image"
+                                    <div class="field-image-16x9 js-layout-image"
                                          data-image-src="{{ field.layout_image.url }}"
-                                         style="max-height: 200px; cursor: zoom-in;">
+                                         style="cursor: zoom-in;">
+                                        <img src="{{ field.layout_image.url }}" alt="Sơ đồ {{ field.name }}">
+                                    </div>
                                     <small class="text-muted d-block mt-1">
                                         Bấm vào hình để xem rõ hơn và phóng to / thu nhỏ.
                                     </small>

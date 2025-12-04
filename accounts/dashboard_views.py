@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Count, Sum, Q
 from django.utils import timezone
+from django.utils.timezone import localtime 
 from datetime import timedelta, datetime
 from decimal import Decimal
 
@@ -20,7 +21,7 @@ def manager_dashboard_view(request):
     """Manager dashboard with comprehensive statistics"""
     
     # Date ranges
-    today = timezone.now().date()
+    today = localtime(timezone.now()).date()
     yesterday = today - timedelta(days=1)
     this_week_start = today - timedelta(days=today.weekday())
     this_month_start = today.replace(day=1)
@@ -176,12 +177,12 @@ def analytics_view(request):
     end_date = request.GET.get('end_date')
     
     if not start_date:
-        start_date = timezone.now().date() - timedelta(days=30)
+        start_date = localtime().date() - timedelta(days=30)
     else:
         start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
     
     if not end_date:
-        end_date = timezone.now().date()
+        end_date = localtime().date()
     else:
         end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
     

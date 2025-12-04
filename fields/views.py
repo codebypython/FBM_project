@@ -216,7 +216,7 @@ def field_management_view(request):
     
     if field_type_filter:
         fields = fields.filter(field_type_id=field_type_filter)
-
+    
     # Sorting
     sort_map = {
         'id_asc': 'id',
@@ -395,6 +395,7 @@ def bulk_pricing_view(request):
             
             # Create new pricing for all time slots
             created_count = 0
+            updated_count = 0
             time_slots = TimeSlot.objects.filter(is_active=True)
             
             for time_slot in time_slots:
@@ -407,8 +408,8 @@ def bulk_pricing_view(request):
                     price = price * peak_multiplier
                     weekend_price = weekend_price * peak_multiplier
                 
-                # Create or update pricing
-                pricing, created = FieldPricing.objects.get_or_create(
+                # Sử dụng update_or_create để tránh lỗi sequence và xử lý cả create/update
+                pricing, created = FieldPricing.objects.update_or_create(
                     field_type=field_type,
                     time_slot=time_slot,
                     effective_date=effective_date,
@@ -422,13 +423,14 @@ def bulk_pricing_view(request):
                 if created:
                     created_count += 1
                 else:
-                    # Update existing
-                    pricing.price = price
-                    pricing.weekend_price = weekend_price
-                    pricing.is_active = True
-                    pricing.save()
+                    updated_count += 1
             
-            messages.success(request, f'Đã tạo/cập nhật {created_count} bảng giá cho {field_type.name}!')
+            if created_count > 0 and updated_count > 0:
+                messages.success(request, f'Đã tạo {created_count} và cập nhật {updated_count} bảng giá cho {field_type.name}!')
+            elif created_count > 0:
+                messages.success(request, f'Đã tạo {created_count} bảng giá mới cho {field_type.name}!')
+            else:
+                messages.success(request, f'Đã cập nhật {updated_count} bảng giá cho {field_type.name}!')
             return redirect('fields:pricing_management')
         else:
             messages.error(request, 'Có lỗi xảy ra. Vui lòng kiểm tra lại thông tin.')

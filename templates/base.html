@@ -19,9 +19,14 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="{% url 'fields:field_list' %}">
-                <i class="bi bi-play-circle-fill me-2"></i>
-                FBM Sports
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="{% url 'fields:field_list' %}">
+                <div class="logo-icon-wrapper me-2">
+                    <i class="bi bi-trophy-fill logo-icon"></i>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-main">FBM</span>
+                    <span class="logo-sub">Sports</span>
+                </div>
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">

@@ -38,23 +38,57 @@ def login_view(request):
     
     if request.method == 'POST':
         form = CustomAuthenticationForm(request, data=request.POST)
-        if form.is_valid():
+        
+        # Kiểm tra validation cơ bản (trường rỗng)
+        if not form.is_valid():
+            # Xử lý lỗi validation từng trường
+            if 'username' in form.errors:
+                error_msg = form.errors['username'][0]
+                if 'required' in str(error_msg).lower() or 'bắt buộc' in str(error_msg).lower():
+                    messages.error(request, 'Vui lòng nhập tên đăng nhập.')
+                else:
+                    messages.error(request, f'Lỗi tên đăng nhập: {error_msg}')
+            
+            if 'password' in form.errors:
+                error_msg = form.errors['password'][0]
+                if 'required' in str(error_msg).lower() or 'bắt buộc' in str(error_msg).lower():
+                    messages.error(request, 'Vui lòng nhập mật khẩu.')
+                else:
+                    messages.error(request, f'Lỗi mật khẩu: {error_msg}')
+            
+            # Xử lý lỗi non_field_errors (từ AuthenticationForm.clean())
+            if form.non_field_errors():
+                for error in form.non_field_errors():
+                    error_str = str(error).lower()
+                    if 'correct username and password' in error_str or 'tên đăng nhập hoặc mật khẩu' in error_str:
+                        messages.error(request, 'Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.')
+                    elif 'inactive' in error_str or 'vô hiệu hóa' in error_str:
+                        messages.error(request, 'Tài khoản này đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.')
+                    else:
+                        messages.error(request, str(error))
+        else:
+            # Form hợp lệ, thử authenticate
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
             user = authenticate(username=username, password=password)
             
             if user is not None:
-                login(request, user)
-                messages.success(request, f'Chào mừng {user.full_name}!')
-                
-                # Redirect based on user role
-                next_url = request.GET.get('next', '/')
-                if user.is_manager() or user.is_admin():
-                    if next_url == '/':
-                        next_url = '/admin/'
-                return redirect(next_url)
+                if not user.is_active:
+                    messages.error(request, 'Tài khoản này đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.')
+                else:
+                    # Đăng nhập thành công
+                    login(request, user)
+                    messages.success(request, f'Chào mừng {user.full_name}!')
+                    
+                    # Redirect based on user role
+                    next_url = request.GET.get('next', '/')
+                    if user.is_manager() or user.is_admin():
+                        if next_url == '/':
+                            next_url = '/admin/'
+                    return redirect(next_url)
             else:
-                messages.error(request, 'Tên đăng nhập hoặc mật khẩu không đúng.')
+                # Sai username hoặc password (trường hợp này thường đã được xử lý bởi form.clean())
+                messages.error(request, 'Tên đăng nhập hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.')
     else:
         form = CustomAuthenticationForm()
     

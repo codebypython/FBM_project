@@ -31,7 +31,13 @@ $(document).ready(function() {
             }, 1000);
         }
     });
-
+    $(window).scroll(function() {
+        if ($(window).scrollTop() > 50) {
+            $('.navbar').addClass('scrolled');
+        } else {
+            $('.navbar').removeClass('scrolled');
+        }
+    });
     // Add fade-in animation to cards
     $('.card, .field-card').addClass('fade-in-up');
 
@@ -407,5 +413,14 @@ $(document).ready(function() {
         if (previewId) {
             previewImage(this, '#' + previewId);
         }
+    });
+
+    // Auto-resize textareas based on content
+    $('textarea.form-control').each(function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    }).on('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
     });
 });
